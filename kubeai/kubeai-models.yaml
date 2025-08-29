@@ -1,0 +1,19 @@
+catalog:
+  qwen3-0.6b:
+    enabled: true
+    engine: OLlama
+    url: 'ollama://qwen3:0.6b'
+    features:
+      - TextGeneration
+    minReplicas: 1
+    resourceProfile: 'cpu:1'
+
+  qwen3-1.7b:
+    enabled: true
+    engine: OLlama
+    url: 'ollama://qwen3:1.7b'
+    features:
+      - TextGeneration
+    minReplicas: 1
+    resourceProfile: 'cpu:1'
+

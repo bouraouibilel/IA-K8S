@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: open-webui-nfs-pv
+  labels:
+    name: open-webui-nfs-pv
+spec:
+  storageClassName: standard
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /data/nfs/kubeai
+    server: 192.168.1.54
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: open-webui
+  namespace: kubeai
+spec:
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 2Gi
+  selector:
+    matchLabels:
+      name: open-webui-nfs-pv
+  volumeName: open-webui-nfs-pv
+  accessModes:
+    - ReadWriteMany
+
