@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anythingllm
+  namespace: anythingllm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: anythingllm
+  template:
+    metadata:
+      labels:
+        app: anythingllm
+    spec:
+      containers:
+        - name: anythingllm
+          image: mintplexlabs/anythingllm:latest
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - secretRef:
+                name: anythingllm-secrets
+          env:
+            - name: STORAGE_DIR
+              value: "/app/storage"
+          volumeMounts:
+            - name: anythingllm-storage
+              mountPath: /app/server/storage
+      volumes:
+        - name: anythingllm-storage
+          persistentVolumeClaim:
+            claimName: pvc-anythingllm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: anythingllm
+  namespace: anythingllm
+spec:
+  selector:
+    app: anythingllm
+  ports:
+    - port: 80
+      targetPort: 3001
+      protocol: TCP
