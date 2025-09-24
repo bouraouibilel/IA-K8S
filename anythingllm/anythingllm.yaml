@@ -22,8 +22,32 @@ spec:
             - secretRef:
                 name: anythingllm-secrets
           env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: anythingllm-secrets
+                  key: JWT_SECRET
             - name: STORAGE_DIR
-              value: "/app/storage"
+              value: "/app/server/storage"
+            - name: VECTOR_DB
+              value: "lancedb"
+            - name: LANCEDB_PATH
+              value: "/app/server/storage/lancedb"
+            - name: LLM_PROVIDER
+              value: "ollama"
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama:11434"
+            - name: OLLAMA_MODEL
+              value: "qwen3:1.7b"
+            - name: LOG_LEVEL
+              value: "debug"
+          resources:
+            requests:
+              cpu: "1000m"      # 1 vCPU garanti
+              memory: "2Gi"     # 2 Go RAM garanti
+            limits:
+              cpu: "4000m"      # max 4 vCPU
+              memory: "8Gi"     # max 8 Go RAM
           volumeMounts:
             - name: anythingllm-storage
               mountPath: /app/server/storage
@@ -44,3 +68,4 @@ spec:
     - port: 80
       targetPort: 3001
       protocol: TCP
+
