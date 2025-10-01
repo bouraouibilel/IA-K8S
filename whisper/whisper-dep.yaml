@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whisper-asr
+  namespace: whisper
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: whisper-asr }
+  template:
+    metadata:
+      labels: { app: whisper-asr }
+    spec:
+      containers:
+        - name: whisper-asr
+          image: onerahmet/openai-whisper-asr-webservice:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: ASR_MODEL              # tiny | base | small | medium
+              value: "medium"
+            - name: ASR_ENGINE             # faster_whisper conseillé sur CPU
+              value: "faster_whisper"
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+              ephemeral-storage: "5Gi"
+            limits:
+              cpu: "4"
+              memory: "4Gi"
+              ephemeral-storage: "10Gi"
+          volumeMounts:
+            - name: whisper-cache
+              mountPath: /root/.cache/whisper
+      volumes:
+        - name: whisper-cache
+          persistentVolumeClaim:
+            claimName: whisper-cache-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whisper-asr
+  namespace: whisper
+spec:
+  selector:
+    app: whisper-asr
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: http
+  type: ClusterIP

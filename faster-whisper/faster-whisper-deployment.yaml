@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: faster-whisper
+  namespace: whisper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: faster-whisper
+  template:
+    metadata:
+      labels:
+        app: faster-whisper
+    spec:
+      containers:
+        - name: faster-whisper
+          image: onerahmet/openai-whisper-asr-webservice:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ASR_MODEL
+              value: "small"        # tiny, base, small, medium, large
+            - name: ASR_BEAM_SIZE
+              value: "5"
+            - name: ASR_COMPUTE_TYPE
+              value: "int8"        # int8 ou float32 pour CPU
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+            limits:
+              cpu: "4"
+              memory: "4Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: faster-whisper
+  namespace: whisper
+spec:
+  selector:
+    app: faster-whisper
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: faster-whisper
+  namespace: whisper
+  annotations:
+    nginx.ingress.kubernetes.io/add-base-url: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: whisper.k8s.cloud.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: faster-whisper
+                port:
+                  number: 8000
