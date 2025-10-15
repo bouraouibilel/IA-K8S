@@ -1,0 +1,116 @@
+{
+  "name": "Docx-Transformer",
+  "nodes": [
+    {
+      "parameters": {
+        "filePath": "/home/node/docs/PASRAU_DCT_Dossier_conception_technique_16.0.docx"
+      },
+      "id": "4683cc41-d549-460a-81ef-238d90ba3a1b",
+      "name": "Read DOCX File1",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://python-docx-service.n8n.svc.cluster.local:8080/process-docx",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        352
+      ],
+      "id": "a8a530ba-0d67-468d-8a28-a48e7c737890",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://neo4j-service.neo4j.svc.cluster.local:7474/db/neo4j/tx/commit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "application/json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "statements",
+              "value": "=[{\"statement\": \"CREATE (p:Paragraph {text: $text})\", \"parameters\": {\"text\": \"{{$json[\"text\"]}}\"}}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        528,
+        352
+      ],
+      "id": "bb7deae9-b4fd-4b2a-b097-66badd4335ec",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "OWRWa8DhP51cpKKf",
+          "name": "Bearer Auth account"
+        },
+        "httpBasicAuth": {
+          "id": "RnBv9Bvzsdlg4hng",
+          "name": "Unnamed credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read DOCX File1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7a51491e-ebfb-45c6-84e1-82b2f28ecd92",
+  "meta": {
+    "instanceId": "5f42d5714f9a3d141721c139bcb22d7da57d76e62d8786307cc990062a361fec"
+  },
+  "id": "txcN8078N47v9VyF",
+  "tags": []
+}

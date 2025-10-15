@@ -20,13 +20,3 @@ spec:
                 name: langflow-service
                 port:
                   number: 80
-    - host: anythingllm.k8s.cloud.io
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: anythingllm
-                port:
-                  number: 3001

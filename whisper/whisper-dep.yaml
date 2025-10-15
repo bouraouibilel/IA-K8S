@@ -6,11 +6,15 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: { app: whisper-asr }
+    matchLabels:
+      app: whisper-asr
   template:
     metadata:
-      labels: { app: whisper-asr }
+      labels:
+        app: whisper-asr
     spec:
+      nodeSelector:
+        type: jetson
       containers:
         - name: whisper-asr
           image: onerahmet/openai-whisper-asr-webservice:latest
@@ -18,17 +22,19 @@ spec:
             - containerPort: 9000
           env:
             - name: ASR_MODEL              # tiny | base | small | medium
-              value: "medium"
+              value: "small"
             - name: ASR_ENGINE             # faster_whisper conseillé sur CPU
               value: "faster_whisper"
+            - name: LOG_LEVEL
+              value: "DEBUG"
           resources:
             requests:
-              cpu: "2"
-              memory: "2Gi"
+              cpu: "3"
+              memory: "4Gi"
               ephemeral-storage: "5Gi"
             limits:
               cpu: "4"
-              memory: "4Gi"
+              memory: "6Gi"
               ephemeral-storage: "10Gi"
           volumeMounts:
             - name: whisper-cache

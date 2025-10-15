@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-docx-service
+  namespace: n8n
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-docx-service
+  template:
+    metadata:
+      labels:
+        app: python-docx-service
+    spec:
+      containers:
+        - name: python-service
+          image: python:3.11-slim
+          ports:
+            - containerPort: 8080
+          command:
+            - sh
+            - -c
+            - |
+              pip install flask python-docx lxml
+              python /app/main.py
+          volumeMounts:
+            - name: app-code
+              mountPath: /app
+      volumes:
+        - name: app-code
+          configMap:
+            name: python-service-code
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-docx-service
+  namespace: n8n
+spec:
+  selector:
+    app: python-docx-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: python-service-code
+  namespace: n8n
+data:
+  main.py: |
+    from flask import Flask, request, jsonify
+    from docx import Document
+    import io
+    import base64
+
+    app = Flask(__name__)
+
+    @app.route('/process-docx', methods=['POST'])
+    def process_docx():
+        try:
+            content_type = (request.content_type or '').lower()
+
+            file_bytes = None
+            filename = 'upload.docx'
+
+            # 1) JSON: { "file_content": "<base64>", "filename": "..." }
+            if content_type.startswith('application/json'):
+                data = request.get_json(silent=True) or {}
+                b64 = data.get('file_content') or data.get('fileContent')
+                if not b64:
+                    return jsonify({"status": "error", "message": "No file content provided"}), 400
+                try:
+                    file_bytes = base64.b64decode(b64)
+                except Exception:
+                    return jsonify({"status": "error", "message": "Invalid base64 in file_content"}), 400
+                filename = data.get('filename') or data.get('fileName') or filename
+
+            # 2) multipart/form-data: champ de fichier 'file' (ou premier champ fichier disponible)
+            elif 'multipart/form-data' in content_type:
+                if 'file' in request.files:
+                    f = request.files['file']
+                elif request.files:
+                    # Prendre le premier champ fichier si le nom diffère
+                    f = next(iter(request.files.values()))
+                else:
+                    return jsonify({"status": "error", "message": "No file part provided"}), 400
+                file_bytes = f.read()
+                filename = getattr(f, 'filename', filename) or filename
+
+            # 3) Binaire brut: le corps de la requête contient directement le DOCX
+            else:
+                file_bytes = request.data
+                if not file_bytes:
+                    return jsonify({"status": "error", "message": "Empty request body"}), 400
+
+            # Charger le DOCX et extraire le texte
+            doc = Document(io.BytesIO(file_bytes))
+        content = []
+        for p in doc.paragraphs:
+            style = p.style.name.lower()
+            if "heading 1" in style:
+                content.append({"type": "title", "text": p.text})
+            elif "heading 2" in style:
+                content.append({"type": "subtitle", "text": p.text})
+            elif p.text.strip():
+                content.append({"type": "paragraph", "text": p.text})
+
+            return jsonify({
+                "status": "success",
+                "filename": filename,
+            "content": content
+            })
+
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+    @app.route('/health', methods=['GET'])
+    def health():
+        return jsonify({"status": "ok"})
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=8080)

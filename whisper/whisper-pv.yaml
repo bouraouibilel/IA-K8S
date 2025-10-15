@@ -11,6 +11,8 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - vers=3
   nfs:
     path: /data/nfs/whisper
     server: 192.168.1.54

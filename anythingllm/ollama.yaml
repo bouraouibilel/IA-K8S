@@ -32,18 +32,6 @@ spec:
             claimName: pvc-ollama
 ---
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: pvc-ollama
-  namespace: anythingllm
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 20Gi
----
-apiVersion: v1
 kind: Service
 metadata:
   name: ollama
